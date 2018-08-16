@@ -4,7 +4,9 @@ definition(
     author: "David Meck",
     description: "Automate a heater/AC unit that is plugged into a smart outlet, based on contact sensor and/or motion sensor.",
     category: "My Apps",
-    iconUrl: "https://raw.githubusercontent.com/meckelangelo/STHeaterACAutomation/master/HeatCool.png")
+    iconUrl: "https://raw.githubusercontent.com/meckelangelo/STHeaterACAutomation/master/HeatCool60x60.png",
+    iconX2Url: "https://raw.githubusercontent.com/meckelangelo/STHeaterACAutomation/master/HeatCool120x120.png",
+    iconX3Url: "https://raw.githubusercontent.com/meckelangelo/STHeaterACAutomation/master/HeatCool.png")
 
 
 preferences {    
