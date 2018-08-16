@@ -46,8 +46,8 @@ preferences {
         input "setComfTemp", "number", title: "Degrees Fahrenheit", required: true
     }
 
-    section("Set the emergency temperature (this temperature will be maintained regardless of contact sensor or motion detection)...") {
-        input "setEmerTemp", "number", title: "Degrees Fahrenheit", required: true
+    section("Set the vacant temperature (this temperature will be maintained regardless of contact sensor or motion detection)...") {
+        input "setVacTemp", "number", title: "Degrees Fahrenheit", required: true
     }
     
     section("Regardless of contact sensor or motion sensor, maintain the comfort temperature in these modes... (WARNING: You must also select this mode in 'Set for specific mode(s)' - otherwise it will not function properly.)") {
@@ -108,7 +108,7 @@ def checkMotion() {
 
 def evaluateTemperature() {
     if (outletMode == "Heater") {
-        if (temperatureSensor.latestValue("temperature") < setEmerTemp) {
+        if (temperatureSensor.latestValue("temperature") < setVacTemp) {
             turnOn()
         } else if (modes.contains(location.mode)) {
             if (temperatureSensor.latestValue("temperature") < setComfTemp) {
@@ -133,7 +133,7 @@ def evaluateTemperature() {
             turnOff()
         }
     } else if (outletMode == "AC") {
-        if (temperatureSensor.latestValue("temperature") > setEmerTemp) {
+        if (temperatureSensor.latestValue("temperature") > setVacTemp) {
             turnOn()
         } else if (modes.contains(location.mode)) {
             if (temperatureSensor.latestValue("temperature") > setComfTemp) {
