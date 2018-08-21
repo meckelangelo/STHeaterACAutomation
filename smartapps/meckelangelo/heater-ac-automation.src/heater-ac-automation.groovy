@@ -148,6 +148,7 @@ def evaluateTemperature() {
             } else {
                 turnOff()
             }
+        } else if (closed == "Nothing") {
         } else if (closed == "On" && door.latestValue("contact") == "closed") {
             if (temperatureSensor.latestValue("temperature") > setComfTemp) {
                 turnOn()
