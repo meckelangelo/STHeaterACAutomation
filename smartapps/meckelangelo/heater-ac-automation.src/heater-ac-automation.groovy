@@ -116,18 +116,35 @@ def evaluateTemperature() {
             } else {
                 turnOff()
             }
-        } else if (opened == "Nothing") {
-        } else if (opened == "On" && door.latestValue("contact") == "open") {
-            if (temperatureSensor.latestValue("temperature") < setComfTemp) {
-                turnOn()
-            } else {
-                turnOff()
+        } else if (door.latestValue("contact") == "open") {
+        	if (opened == "On") {
+                if (temperatureSensor.latestValue("temperature") < setComfTemp) {
+                    turnOn()
+                } else {
+                    turnOff()
+                }
+        	}
+            else if (opened == "Off") {
+            	if (temperatureSensor.latestValue("temperature") < setVacTempt) {
+                	turnOn()
+                } else {
+                	turnOff()
+                }
             }
-        } else if (closed == "On" && door.latestValue("contact") == "closed") {
-            if (temperatureSensor.latestValue("temperature") < setComfTemp) {
-                turnOn()
-            } else {
-                turnOff()
+        } else if (door.latestValue("contact") == "closed") {
+        	if (closed == "On") {
+                if (temperatureSensor.latestValue("temperature") < setComfTemp) {
+                    turnOn()
+                } else {
+                    turnOff()
+                }
+        	}
+            else if (closed == "Off") {
+            	if (temperatureSensor.latestValue("temperature") < setVacTempt) {
+                	turnOn()
+                } else {
+                	turnOff()
+                }
             }
         } else {
             turnOff()
@@ -141,19 +158,35 @@ def evaluateTemperature() {
             } else {
                 turnOff()
             }
-        } else if (opened == "Nothing") {
-        } else if (opened == "On" && door.latestValue("contact") == "open") {
-            if (temperatureSensor.latestValue("temperature") > setComfTemp) {
-                turnOn()
-            } else {
-                turnOff()
+        } else if (door.latestValue("contact") == "open") {
+        	if (opened == "On") {
+                if (temperatureSensor.latestValue("temperature") > setComfTemp) {
+                    turnOn()
+                } else {
+                    turnOff()
+                }
+        	}
+            else if (opened == "Off") {
+            	if (temperatureSensor.latestValue("temperature") > setVacTempt) {
+                	turnOn()
+                } else {
+                	turnOff()
+                }
             }
-        } else if (closed == "Nothing") {
-        } else if (closed == "On" && door.latestValue("contact") == "closed") {
-            if (temperatureSensor.latestValue("temperature") > setComfTemp) {
-                turnOn()
-            } else {
-                turnOff()
+        } else if (door.latestValue("contact") == "closed") {
+        	if (closed == "On") {
+                if (temperatureSensor.latestValue("temperature") > setComfTemp) {
+                    turnOn()
+                } else {
+                    turnOff()
+                }
+        	}
+            else if (closed == "Off") {
+            	if (temperatureSensor.latestValue("temperature") > setVacTempt) {
+                	turnOn()
+                } else {
+                	turnOff()
+                }
             }
         } else {
             turnOff()
