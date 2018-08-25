@@ -59,6 +59,7 @@ preferences {
 
 def installed() {
     log.debug "Installed with settings: ${settings}"
+    state.On = false
     if (outletMode != "Disabled") {
         initialize()
     }
@@ -66,6 +67,7 @@ def installed() {
 
 def updated() {
     log.debug "Updated with settings: ${settings}"
+    state.On = false
     unsubscribe()
     if (outletMode != "Disabled") {
         initialize()
@@ -83,11 +85,15 @@ def initialize() {
 }
 
 def turnOn() {
-    outlet.on()
+    if (state.On != true) {
+        outlet.on()
+    } else {}
 }
 
 def turnOff() {
-    outlet.off()
+    if (state.On == true) {
+        outlet.off()
+    } else {}
 }
 
 def checkMotion() {
