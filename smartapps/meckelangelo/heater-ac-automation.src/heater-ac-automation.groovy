@@ -75,7 +75,7 @@ def updated() {
 def initialize() {
     subscribe(temperatureSensor, "temperature", temperatureHandler)
     if (door != null && door != "") {
-	    subscribe(door, "contact", contactHandler)
+        subscribe(door, "contact", contactHandler)
     }
     subscribe(motionSensor, "motion.active", motionHandler)
     subscribe(motionSensor, "motion.inactive", motionStoppedHandler)
@@ -99,11 +99,8 @@ def checkMotion() {
         
         if (elapsed >= threshold) {
             turnOff()
-        }
-        else {
-        }
-    } else {
-    }
+        } else {}
+    } else {}
 }
 
 def evaluateTemperature() {
@@ -115,36 +112,6 @@ def evaluateTemperature() {
                 turnOn()
             } else {
                 turnOff()
-            }
-        } else if (door.latestValue("contact") == "open") {
-        	if (opened == "On") {
-                if (temperatureSensor.latestValue("temperature") < setComfTemp) {
-                    turnOn()
-                } else {
-                    turnOff()
-                }
-        	}
-            else if (opened == "Off") {
-            	if (temperatureSensor.latestValue("temperature") < setVacTempt) {
-                	turnOn()
-                } else {
-                	turnOff()
-                }
-            }
-        } else if (door.latestValue("contact") == "closed") {
-        	if (closed == "On") {
-                if (temperatureSensor.latestValue("temperature") < setComfTemp) {
-                    turnOn()
-                } else {
-                    turnOff()
-                }
-        	}
-            else if (closed == "Off") {
-            	if (temperatureSensor.latestValue("temperature") < setVacTempt) {
-                	turnOn()
-                } else {
-                	turnOff()
-                }
             }
         } else {
             turnOff()
@@ -158,36 +125,6 @@ def evaluateTemperature() {
             } else {
                 turnOff()
             }
-        } else if (door.latestValue("contact") == "open") {
-        	if (opened == "On") {
-                if (temperatureSensor.latestValue("temperature") > setComfTemp) {
-                    turnOn()
-                } else {
-                    turnOff()
-                }
-        	}
-            else if (opened == "Off") {
-            	if (temperatureSensor.latestValue("temperature") > setVacTempt) {
-                	turnOn()
-                } else {
-                	turnOff()
-                }
-            }
-        } else if (door.latestValue("contact") == "closed") {
-        	if (closed == "On") {
-                if (temperatureSensor.latestValue("temperature") > setComfTemp) {
-                    turnOn()
-                } else {
-                    turnOff()
-                }
-        	}
-            else if (closed == "Off") {
-            	if (temperatureSensor.latestValue("temperature") > setVacTempt) {
-                	turnOn()
-                } else {
-                	turnOff()
-                }
-            }
         } else {
             turnOff()
         }
@@ -197,7 +134,15 @@ def evaluateTemperature() {
 }
 
 def contactHandler(evt) {
-    evaluateTemperature()
+    if (door.latestValue("contact") == "open") {
+        if (opened == "On" || opened == "Off") {
+            evaluateTemperature()
+        } else {}
+    } else if (door.latestValue("contact") == "closed") {
+        if (closed == "On" || closed == "Off") {
+            evaluateTemperature()
+        } else {}
+    } else {}
 }
 
 def temperatureHandler(evt) {
