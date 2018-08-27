@@ -60,6 +60,7 @@ preferences {
 def installed() {
     log.debug "Installed with settings: ${settings}"
     state.On = false
+    state.Event = "None"
     if (outletMode != "Disabled") {
         initialize()
     }
@@ -85,14 +86,16 @@ def initialize() {
 }
 
 def turnOn() {
-    if (state.On != true) {
+    if (state.On == false) {
         outlet.on()
+        state.On = true
     } else {}
 }
 
 def turnOff() {
     if (state.On == true) {
         outlet.off()
+        state.On = false
     } else {}
 }
 
@@ -109,28 +112,28 @@ def checkMotion() {
     } else {}
 }
 
-def evaluateTemperature() {
+def evaluateTemperature(String event) {
     if (outletMode == "Heater") {
-        if (temperatureSensor.latestValue("temperature") < setVacTemp) {
-            turnOn()
-        } else if (modes.contains(location.mode)) {
-            if (temperatureSensor.latestValue("temperature") < setComfTemp) {
+        if (event == "contact" || event == "motion" || (event == "mode" && modes.contains(location.mode))) {
+            if (temperatureSensor.latestValue("temperature") < setComfTempt) {
                 turnOn()
             } else {
                 turnOff()
             }
+        } else if (temperatureSensor.latestValue("temperature") < setVacTemp) {
+            turnOn()
         } else {
             turnOff()
         }
     } else if (outletMode == "AC") {
-        if (temperatureSensor.latestValue("temperature") > setVacTemp) {
-            turnOn()
-        } else if (modes.contains(location.mode)) {
-            if (temperatureSensor.latestValue("temperature") > setComfTemp) {
+        if (event == "contact" || event == "motion" || (event == "mode" && modes.contains(location.mode))) {
+            if (temperatureSensor.latestValue("temperature") > setComfTempt) {
                 turnOn()
             } else {
                 turnOff()
             }
+        } else if (temperatureSensor.latestValue("temperature") > setVacTemp) {
+            turnOn()
         } else {
             turnOff()
         }
@@ -142,21 +145,22 @@ def evaluateTemperature() {
 def contactHandler(evt) {
     if (door.latestValue("contact") == "open") {
         if (opened == "On" || opened == "Off") {
-            evaluateTemperature()
+            evaluateTemperature("contact")
         } else {}
     } else if (door.latestValue("contact") == "closed") {
         if (closed == "On" || closed == "Off") {
-            evaluateTemperature()
+        	state.Event = "Contact"
+            evaluateTemperature("contact")
         } else {}
     } else {}
 }
 
 def temperatureHandler(evt) {
-    evaluateTemperature()
+    evaluateTemperature("temperature")
 }
 
 def motionHandler(evt) {
-    evaluateTemperature()
+    evaluateTemperature("motion")
 }
 
 def motionStoppedHandler(evt) {
@@ -164,5 +168,5 @@ def motionStoppedHandler(evt) {
 }
 
 def modeChangeHandler(evt) {
-    evaluateTemperature()
+    evaluateTemperature("mode")
 }
