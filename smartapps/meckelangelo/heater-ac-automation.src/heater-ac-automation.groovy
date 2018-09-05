@@ -60,7 +60,6 @@ preferences {
 def installed() {
     log.debug "Installed with settings: ${settings}"
     state.On = false
-    state.Event = "None"
     if (outletMode != "Disabled") {
         initialize()
     }
@@ -104,7 +103,7 @@ def turnOff() {
     log.debug "Switch: $switchValue"
     log.debug "Temperature: $tempValue"
     
-    if (outlet.currentValue("switch") == "on") {
+    if (outlet.latestValue("switch") == "on") {
         log.debug ("TURN SWITCH OFF")
         outlet.off()
     } else {}
@@ -125,26 +124,38 @@ def checkMotion() {
 
 def evaluateTemperature(String event) {
     if (outletMode == "Heater") {
-        if (event == "contact" || event == "motion" || event == "temperature" || (event == "mode" && modes.contains(location.mode))) {
+        if (event == "contact" || event == "motion" || (event == "mode" && modes.contains(location.mode))) {
             if (temperatureSensor.latestValue("temperature") < setComfTemp) {
                 turnOn()
             } else {
                 turnOff()
             }
-        } else if (temperatureSensor.latestValue("temperature") < setVacTemp) {
-            turnOn()
+        } else if (event == "mode" && !modes.contains(location.mode)) {
+            if (temperatureSensor.latestValue("temperature") < setVacTemp) {
+                turnOn()
+            } else {
+                turnOff()
+            }
+        } else if (event == "temperature" && temperatureSensor.latestValue("temperature") >= setComfTemp) {
+            turnOff()
         } else {
             turnOff()
         }
     } else if (outletMode == "AC") {
-        if (event == "contact" || event == "motion" || event == "temperature" || (event == "mode" && modes.contains(location.mode))) {
+        if (event == "contact" || event == "motion" || (event == "mode" && modes.contains(location.mode))) {
             if (temperatureSensor.latestValue("temperature") > setComfTemp) {
                 turnOn()
             } else {
                 turnOff()
             }
-        } else if (temperatureSensor.latestValue("temperature") > setVacTemp) {
-            turnOn()
+        } else if (event == "mode" && !modes.contains(location.mode)) {
+            if (temperatureSensor.latestValue("temperature") > setVacTemp) {
+                turnOn()
+            } else {
+                turnOff()
+            }
+        } else if (event == "temperature" && temperatureSensor.latestValue("temperature") <= setComfTemp) {
+            turnOff()
         } else {
             turnOff()
         }
