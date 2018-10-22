@@ -114,7 +114,7 @@ def checkMotion() {
     def elapsed = now() - motionState.date.time
     def threshold = minutes * 60 * 1000
     
-    if (motionState.value == "inactive" && elapsed >= threshold) {
+    if (motionState.contains("inactive") && elapsed >= threshold) {
         evaluateTemperature("no_motion")
     } else {
         evaluateTemperature("motion")
