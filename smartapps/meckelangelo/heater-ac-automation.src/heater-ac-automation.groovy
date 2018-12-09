@@ -59,7 +59,6 @@ preferences {
 
 def installed() {
     log.debug "Installed with settings: ${settings}"
-    state.On = false
     if (outletMode != "Disabled") {
         initialize()
     }
@@ -90,10 +89,8 @@ def turnOn() {
     log.debug "Switch: $switchValue"
     log.debug "Temperature: $tempValue"
     
-    if (outlet.latestValue("switch") == "off") {
-        log.debug ("TURN SWITCH ON")
-        outlet.on()
-    } else {}
+    log.debug ("TURN SWITCH ON")
+    outlet.on()
 }
 
 def turnOff() {
@@ -103,10 +100,8 @@ def turnOff() {
     log.debug "Switch: $switchValue"
     log.debug "Temperature: $tempValue"
     
-    if (outlet.latestValue("switch") == "on") {
-        log.debug ("TURN SWITCH OFF")
-        outlet.off()
-    } else {}
+    log.debug ("TURN SWITCH OFF")
+    outlet.off()
 }
 
 def checkMotion() {
