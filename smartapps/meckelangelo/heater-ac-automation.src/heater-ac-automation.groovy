@@ -118,14 +118,14 @@ def checkMotion() {
 
 def evaluateTemperature(String event) {
     if (outletMode == "Heater") {
-        if (event == "contact" || event == "motion" || event == "mode" ) {
+        if (event == "contact" || event == "motion" || event == "mode" || (event == "no_motion" && modes.contains(location.mode))) {
             if (temperatureSensor.latestValue("temperature") < setComfTemp) {
                 turnOn()
             } else {
                 turnOff()
             }
-        } else if (event == "no_motion" && !modes.contains(location.mode)) {
-            if (temperatureSensor.latestValue("temperature") < setVacTemp) {
+        } else if (event == "no_motion") {
+            if (temperaturSensor.latestValue("temperature") < setVacTemp) {
                 turnOn()
             } else {
                 turnOff()
@@ -134,13 +134,13 @@ def evaluateTemperature(String event) {
             turnOff()
         }
     } else if (outletMode == "AC") {
-        if (event == "contact" || event == "motion" || event == "mode" ) {
+        if (event == "contact" || event == "motion" || event == "mode" || (event == "no_motion" && modes.contains(location.mode))) {
             if (temperatureSensor.latestValue("temperature") > setComfTemp) {
                 turnOn()
             } else {
                 turnOff()
             }
-        } else if (event == "no_motion" && !modes.contains(location.mode)) {
+        } else if (event == "no_motion") {
             if (temperatureSensor.latestValue("temperature") > setVacTemp) {
                 turnOn()
             } else {
