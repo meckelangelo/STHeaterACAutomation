@@ -202,7 +202,7 @@ def contactHandler(evt) {
 def modeChangeHandler(evt) {
     log.debug("EVENT: Mode changed...")
     if (modes.contains(location.mode)) {
-        checkTemperature("mode")
+        checkTemperature(false)
     } else {
         checkMotion("mode")
     }
@@ -213,7 +213,7 @@ def motionHandler(evt) {
     	if (state.nextMotionCheck == 0 || now() > state.nextMotionCheck) {
             log.debug("EVENT: Motion started... Checking temperature.")
             state.nextMotionCheck = now() + (minutes * 60 * 1000)
-            checkTemperature("motion")
+            checkTemperature(true)
         } else {
         	log.debug("EVENT: Motion started... Checked temperature within past $minutes minutes, skipping this time.")
         }
