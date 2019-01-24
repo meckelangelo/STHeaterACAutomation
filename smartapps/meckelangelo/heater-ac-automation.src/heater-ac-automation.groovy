@@ -23,7 +23,7 @@ preferences {
     }
     
     section("(Optional) Turn the outlet on/off when this contact sensor is opened/closed...") {
-        input "door", "capability.contactSensor", title: "Sensor", required: false, multiple:false
+        input "contact", "capability.contactSensor", title: "Sensor", required: false, multiple:false
     }
     
     section("Should the outlet turn on or off (or do nothing) when the contact sensor is opened? Choose 'Nothing' if no contact sensor selected.") {
@@ -34,7 +34,7 @@ preferences {
         input "closed", "enum", title: "Closed", required: true, options: ["On", "Off", "Nothing"]
     }
     
-    section("Turn the outlet on when motion has been detected by this sensor (and the temperature exceeds the criteria further down)...") {
+    section("Turn the outlet on when motion has been detected by this sensor (and the temperature exceeds the comfort temperature, entered below)...") {
         input "motionSensor", "capability.motionSensor", title: "Sensor", required: true, multiple: false
     }
     
@@ -42,15 +42,15 @@ preferences {
         input "minutes", "number", title: "Minutes", required: true
     }
     
-    section("Set the comfort temperature...") {
+    section("Set the COMFORT temperature (this temperature will be maintained when there is activity AND the home is in one of the modes in 'Set for specific mode(s)' below.)...") {
         input "setComfTemp", "number", title: "Degrees Fahrenheit", required: true
     }
 
-    section("Set the vacant temperature (this temperature will be maintained regardless of contact sensor or motion detection)...") {
+    section("Set the VACANT temperature (this temperature will be maintained regardless of activity, BUT the home must be in one of the modes in 'Set for specific mode(s)' below.)...") {
         input "setVacTemp", "number", title: "Degrees Fahrenheit", required: true
     }
     
-    section("Regardless of contact sensor or motion sensor, maintain the comfort temperature in these modes... (WARNING: You must also select this mode in 'Set for specific mode(s)' - otherwise it will not function properly.)") {
+    section("Regardless of activity, maintain the COMFORT temperature in these modes... (WARNING: You must also select this mode in 'Set for specific mode(s)' - otherwise it will not function properly.)") {
         input "modes", "mode", title: "Mode", multiple: true, required: false
     }
     
@@ -73,9 +73,10 @@ def updated() {
 }
 
 def initialize() {
+	state.nextMotionCheck = 0
     subscribe(temperatureSensor, "temperature", temperatureHandler)
-    if (door != null && door != "") {
-        subscribe(door, "contact", contactHandler)
+    if (contact != null && contact != "") {
+        subscribe(contact, "contact", contactHandler)
     }
     subscribe(motionSensor, "motion.active", motionHandler)
     subscribe(motionSensor, "motion.inactive", motionStoppedHandler)
@@ -84,114 +85,155 @@ def initialize() {
 
 def turnOn() {
     def switchValue = outlet.latestValue("switch")
-    def tempValue = temperatureSensor.latestValue("temperature")
 
-    log.debug "Switch: $switchValue"
-    log.debug "Temperature: $tempValue"
-    
-    log.debug ("TURN SWITCH ON")
-    outlet.on()
+    if (switchValue == "on") {
+        log.debug ("Switch is already turned on. No action taken.")
+    } else {
+        log.debug ("TURNING THE SWITCH ON")
+        outlet.on()
+    }
 }
 
 def turnOff() {
     def switchValue = outlet.latestValue("switch")
-    def tempValue = temperatureSensor.latestValue("temperature")
 
-    log.debug "Switch: $switchValue"
-    log.debug "Temperature: $tempValue"
-    
-    log.debug ("TURN SWITCH OFF")
-    outlet.off()
-}
-
-def checkMotion() {
-    def motionState = motionSensor.currentState("motion")
-    def elapsed = now() - motionState.date.time
-    def threshold = minutes * 60 * 1000
-    
-    if (motionState.contains("inactive") && elapsed >= threshold) {
-        evaluateTemperature("no_motion")
+	if (switchValue == "off") {
+    	log.debug ("Switch is already turned off. No action taken.")
     } else {
-        evaluateTemperature("motion")
+        log.debug ("TURNING THE SWITCH OFF")
+    	outlet.off()
     }
 }
 
-def evaluateTemperature(String event) {
-    if (outletMode == "Heater") {
-        if (event == "contact" || event == "motion" || event == "mode" || (event == "no_motion" && modes.contains(location.mode))) {
-            if (temperatureSensor.latestValue("temperature") < setComfTemp) {
-                turnOn()
-            } else {
-                turnOff()
-            }
-        } else if (event == "no_motion") {
-            if (temperaturSensor.latestValue("temperature") < setVacTemp) {
-                turnOn()
-            } else {
-                turnOff()
-            }
-        } else {
+def checkMotion(String event) {
+    def motionState = motionSensor.currentState("motion")
+    def elapsed = now() - motionState.date.time
+    def elapsedMinutes = elapsed / 60 / 1000
+    def threshold = minutes * 60 * 1000
+    
+    log.debug "Checking motion... Last motion occurred $elapsedMinutes minutes ago."
+    
+    if (motionState.contains("inactive") && elapsed >= threshold) {
+    	log.debug ("Last motion occurred outside of the specified threshold ($minutes minutes).")
+        checkContact(event)
+    } else {
+    	log.debug ("Last motion occurred within the specified threshold ($minutes minutes).")
+        checkTemperature(event)
+    }
+}
+
+def checkContact(String event) {
+	def contactState = contact.currentState("contact")
+    def elapsed = now() - contactState.date.time
+    def elapsedMinutes = elapsed / 60 / 1000
+    def threshold = minutes * 60 * 1000
+    
+    log.debug "Checking contact... Last contact activity occurred $elapsedMinutes minutes ago."
+    
+    if (event == "contact") {
+        if ((contact.latestValue("contact") == "open" && opened == "On") || (contact.latestValue("contact") == "closed" && closed == "On") || modes.contains(location.mode)) {
+        	log.debug ("Contact evaluation indicates that the switch MAY be turned on, pending further evaluation.")
+            checkTemperature(event)
+        } else if ((contact.latestValue("contact") == "open" && opened == "Off") || (contact.latestValue("contact") == "closed" && closed == "Off")) {
+            log.debug ("Contact evaluation indicates that the switch must be turned off.")
             turnOff()
         }
-    } else if (outletMode == "AC") {
-        if (event == "contact" || event == "motion" || event == "mode" || (event == "no_motion" && modes.contains(location.mode))) {
-            if (temperatureSensor.latestValue("temperature") > setComfTemp) {
-                turnOn()
-            } else {
-                turnOff()
-            }
-        } else if (event == "no_motion") {
-            if (temperatureSensor.latestValue("temperature") > setVacTemp) {
-                turnOn()
-            } else {
-                turnOff()
-            }
-        } else {
+    } else if (["mode", "motionStopped", "temperature"].contains(event) && elapsed < threshold) {
+    	if ((contact.latestValue("contact") == "open" && opened == "Off") || (contact.latestValue("contact") == "closed" && closed == "Off")) {
+            log.debug ("Contact evaluation indicates that the switch must be turned off.")
             turnOff()
+        } else {
+        	log.debug ("Contact evaluation indicates that the switch MAY be turned on, pending further evaluation.")
+            checkTemperature(event);
         }
     } else {
+    	log.debug ("Contact evaluation indicates that the switch must be turned off.")
+        turnOff();
+    }
+}
+
+def checkTemperature(String event) {
+	def currentTemp = temperatureSensor.latestValue("temperature")
+    def boolTurnOn = false
+    
+	log.debug ("Checking temperature... Current temperature is $currentTemp degrees.")
+    
+    if (outletMode == "Heater") {
+        if (["contact", "mode", "motion"].contains(event) || (event == "temperature" && modes.contains(location.mode))) {
+        	log.debug ("Checking temperature... COMFORT temperature ($setComfTemp degrees) should be met at this time.")
+            if (currentTemp < setComfTemp) {
+            	boolTurnOn = true
+            }
+        } else if (event == "temperature") {
+            log.debug ("Checking temperature... VACANT temperature ($setVacTemp degrees) should be met at this time.")
+            if (currentTemp < setVacTemp) {
+            	boolTurnOn = true
+            }
+        }
+    } else if (outletMode == "AC") {
+        if (["contact", "mode", "motion"].contains(event) || (event == "temperature" && modes.contains(location.mode))) {
+            log.debug ("Checking temperature... COMFORT temperature ($setComfTemp degrees) should be met at this time.")
+            if (currentTemp> setComfTemp) {
+                boolTurnOn = true
+            }
+        } else if (event == "temperature") {
+            log.debug ("Checking temperature... VACANT temperature ($setVacTemp degrees) should be met at this time.")
+            if (currentTemp > setVacTemp) {
+                boolTurnOn = true
+            }
+        }
+    }
+    
+    if (boolTurnOn) {
+        log.debug ("Checking temperature... It is not, switch must be turned on (if it is not already).")
+        turnOn()
+    } else {
+    	log.debug ("Checking temperature... Switch must be turned off (if it is not already).")
         turnOff()
     }
 }
 
 def contactHandler(evt) {
-    if (door.latestValue("contact") == "open" && opened == "On") {
-        log.debug("Contact: open")
-        if (opened == "On") {
-            evaluateTemperature("contact")
-        } else if (opened == "Off") {
-            turnOff()
-        }
-    } else if (door.latestValue("contact") == "closed") {
-        log.debug("Contact: closed")
-        if (closed == "On") {
-            evaluateTemperature("contact")
-        } else if (closed == "Off") {
-            turnOff()
-        }
+	if (contact.latestValue("contact") == "open") {
+		log.debug("EVENT: Contact opened...")
+    } else if (contact.latestValue("contact") == "closed") {
+    	log.debug("EVENT: Contact closed...")
+    }
+    if (["On", "Off"].contains(opened) || ["On", "Off"].contains(closed)) {
+    	checkContact("contact")
     }
 }
 
 def modeChangeHandler(evt) {
-    log.debug("Mode: changed")
+    log.debug("EVENT: Mode changed...")
     if (modes.contains(location.mode)) {
-        evaluateTemperature("mode")
+        checkTemperature("mode")
     } else {
-        checkMotion
+        checkMotion("mode")
     }
 }
 
 def motionHandler(evt) {
-    log.debug("Motion: started")
-    evaluateTemperature("motion")
+    if (outlet.latestValue("switch") == "off") {
+    	if (state.nextMotionCheck == 0 || now() > state.nextMotionCheck) {
+            log.debug("EVENT: Motion started... Checking temperature.")
+            state.nextMotionCheck = now() + (minutes * 60 * 1000)
+            checkTemperature("motion")
+        } else {
+        	log.debug("EVENT: Motion started... Checked temperature within past $minutes minutes, skipping this time.")
+        }
+    }
 }
 
 def motionStoppedHandler(evt) {
-    log.debug("Motion: stopped")
-    runIn(minutes * 60, checkMotion)
+	unschedule()
+    if (outlet.latestValue("switch") == "on") {
+		log.debug("EVENT: Motion stopped...")
+        runIn(minutes * 60, checkMotion, [event: "motionStopped"])
+	}
 }
 
 def temperatureHandler(evt) {
-    log.debug("Temperature: changed")
-    checkMotion
+    log.debug("EVENT: Temperature changed...")
+    checkMotion("temperature")
 }
