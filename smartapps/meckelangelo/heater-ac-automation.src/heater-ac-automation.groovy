@@ -118,7 +118,7 @@ def checkMotion(String event) {
         checkContact(event)
     } else {
     	log.debug ("Last motion occurred within the specified threshold ($minutes minutes).")
-        checkTemperature(event)
+        checkTemperature(true)
     }
 }
 
@@ -131,52 +131,47 @@ def checkContact(String event) {
     log.debug "Checking contact... Last contact activity occurred $elapsedMinutes minutes ago."
     
     if (event == "contact") {
-        if ((contact.latestValue("contact") == "open" && opened == "On") || (contact.latestValue("contact") == "closed" && closed == "On") || modes.contains(location.mode)) {
-        	log.debug ("Contact evaluation indicates that the switch MAY be turned on, pending further evaluation.")
-            checkTemperature(event)
-        } else if ((contact.latestValue("contact") == "open" && opened == "Off") || (contact.latestValue("contact") == "closed" && closed == "Off")) {
-            log.debug ("Contact evaluation indicates that the switch must be turned off.")
-            turnOff()
-        }
-    } else if (["mode", "motionStopped", "temperature"].contains(event) && elapsed < threshold) {
-    	if ((contact.latestValue("contact") == "open" && opened == "Off") || (contact.latestValue("contact") == "closed" && closed == "Off")) {
-            log.debug ("Contact evaluation indicates that the switch must be turned off.")
-            turnOff()
+    	if ((contact.latestValue("contact") == "open" && opened == "On") || (contact.latestValue("contact") == "closed" && closed == "On")) {
+            log.debug ("Contact event occurred. Evaluate temperatures to determine if switch should be turned on.")
+            checkTemperature(true)
         } else {
-        	log.debug ("Contact evaluation indicates that the switch MAY be turned on, pending further evaluation.")
-            checkTemperature(event);
+        	log.debug ("Contact event occurred. Evaluate temperatures to determine if switch should be turned off.")
+        	checkTemperature(false)
         }
+    } else if (((contact.latestValue("contact") == "open" && opened == "On") || (contact.latestValue("contact") == "closed" && closed == "On")) && elapsed <= threshold) {
+    	log.debug ("Contact event occurred recently. Evaluate temperatures to determine if switch should be turned on.")
+    	checkTemperature(true)
     } else {
-    	log.debug ("Contact evaluation indicates that the switch must be turned off.")
-        turnOff();
+    	log.debug ("Contact event did not occure recently. Evaluate temperatures to determine if switch should be turned off.")
+    	checkTemperature(false)
     }
 }
 
-def checkTemperature(String event) {
+def checkTemperature(boolean boolActivity) {
 	def currentTemp = temperatureSensor.latestValue("temperature")
     def boolTurnOn = false
     
 	log.debug ("Checking temperature... Current temperature is $currentTemp degrees.")
     
     if (outletMode == "Heater") {
-        if (["contact", "mode", "motion"].contains(event) || (event == "temperature" && modes.contains(location.mode))) {
+        if (boolActivity || modes.contains(location.mode)) {
         	log.debug ("Checking temperature... COMFORT temperature ($setComfTemp degrees) should be met at this time.")
             if (currentTemp < setComfTemp) {
             	boolTurnOn = true
             }
-        } else if (event == "temperature") {
+        } else {
             log.debug ("Checking temperature... VACANT temperature ($setVacTemp degrees) should be met at this time.")
             if (currentTemp < setVacTemp) {
             	boolTurnOn = true
             }
         }
     } else if (outletMode == "AC") {
-        if (["contact", "mode", "motion"].contains(event) || (event == "temperature" && modes.contains(location.mode))) {
+        if (boolActivity || modes.contains(location.mode)) {
             log.debug ("Checking temperature... COMFORT temperature ($setComfTemp degrees) should be met at this time.")
             if (currentTemp> setComfTemp) {
                 boolTurnOn = true
             }
-        } else if (event == "temperature") {
+        } else {
             log.debug ("Checking temperature... VACANT temperature ($setVacTemp degrees) should be met at this time.")
             if (currentTemp > setVacTemp) {
                 boolTurnOn = true
