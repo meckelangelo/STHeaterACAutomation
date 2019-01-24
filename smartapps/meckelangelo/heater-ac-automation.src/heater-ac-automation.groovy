@@ -113,7 +113,7 @@ def checkMotion(String event) {
     
     log.debug "Checking motion... Last motion occurred $elapsedMinutes minutes ago."
     
-    if (motionState.contains("inactive") && elapsed >= threshold) {
+    if (motionState.value == "inactive" && elapsed >= threshold) {
     	log.debug ("Last motion occurred outside of the specified threshold ($minutes minutes).")
         checkContact(event)
     } else {
