@@ -113,7 +113,7 @@ def checkMotion(String event) {
     
     log.debug "Checking motion... Last motion occurred $elapsedMinutes minutes ago."
     
-    if (motionState.value == "inactive" && elapsed >= threshold) {
+    if (motionState.contains("inactive") && elapsed >= threshold) {
     	log.debug ("Last motion occurred outside of the specified threshold ($minutes minutes).")
         checkContact(event)
     } else {
@@ -142,7 +142,7 @@ def checkContact(String event) {
     	log.debug ("Contact event occurred recently. Evaluate temperatures to determine if switch should be turned on.")
     	checkTemperature(true)
     } else {
-    	log.debug ("Contact event did not occure recently. Evaluate temperatures to determine if switch should be turned off.")
+    	log.debug ("Contact event did not occur recently. Evaluate temperatures to determine if switch should be turned off.")
     	checkTemperature(false)
     }
 }
@@ -156,26 +156,18 @@ def checkTemperature(boolean boolActivity) {
     if (outletMode == "Heater") {
         if (boolActivity || modes.contains(location.mode)) {
         	log.debug ("Checking temperature... COMFORT temperature ($setComfTemp degrees) should be met at this time.")
-            if (currentTemp < setComfTemp) {
-            	boolTurnOn = true
-            }
+            boolTurnOn = (currentTemp < setComfTemp)
         } else {
             log.debug ("Checking temperature... VACANT temperature ($setVacTemp degrees) should be met at this time.")
-            if (currentTemp < setVacTemp) {
-            	boolTurnOn = true
-            }
+            boolTurnOn = (currentTemp < setVacTemp)
         }
     } else if (outletMode == "AC") {
         if (boolActivity || modes.contains(location.mode)) {
             log.debug ("Checking temperature... COMFORT temperature ($setComfTemp degrees) should be met at this time.")
-            if (currentTemp> setComfTemp) {
-                boolTurnOn = true
-            }
+            boolTurnOn = (currentTemp > setComfTemp)
         } else {
             log.debug ("Checking temperature... VACANT temperature ($setVacTemp degrees) should be met at this time.")
-            if (currentTemp > setVacTemp) {
-                boolTurnOn = true
-            }
+            boolTurnOn = (currentTemp > setVacTemp)
         }
     }
     
@@ -229,6 +221,14 @@ def motionStoppedHandler(evt) {
 }
 
 def temperatureHandler(evt) {
+	def currentTemp = temperatureSensor.latestValue("temperature")
+    
     log.debug("EVENT: Temperature changed...")
-    checkMotion("temperature")
+    
+    if ((outletMode == "Heater" && currentTemp >= setComfTemp) || (outletMode == "AC" && currentTemp <= setComfTemp)) {
+    	log.debug("Checking temperature... Switch must be turned off (if it is not already).")
+        turnOff()
+    } else {
+	    checkMotion("temperature")
+    }
 }
